@@ -1,3 +1,4 @@
+from unicodedata import name
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 import RPi.GPIO as GPIO
@@ -7,6 +8,7 @@ import busio as io
 import adafruit_mlx90614
 import cv2
 import os
+from db import Database
 
 recognizer = cv2.face.LBPHFaceRecognizer_create()
 recognizer.read('D:\\facerec_learn\\trainer\\trainer.yml')
@@ -54,11 +56,14 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
         GPIO.output(led_green, GPIO.HIGH)
         GPIO.output(led_red, GPIO.LOW)
         os.system('mpg321 1.mp3 &')
-    elif 38 >= temp >= 32.5: 
-        temp_ = mape(temp, 32.5, 38, 36.9, 40)
-        GPIO.output(led_red, GPIO.HIGH)
-        GPIO.output(led_green, GPIO.LOW)
-        os.system('mpg321 2.mp3 &')
+    elif 38 >= temp >= 32.5:
+        if (temp >32,5 and name):
+         Database.InsertToDB(temp, name)
+         Database.Commit()    
+         temp_ = mape(temp, 32.5, 38, 36.9, 40)
+         GPIO.output(led_red, GPIO.HIGH)
+         GPIO.output(led_green, GPIO.LOW)
+         os.system('mpg321 2.mp3 &')
     else:
         temp_ = temp
         GPIO.output(led_green, GPIO.LOW)
@@ -70,7 +75,7 @@ for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port
         cv2.rectangle(image, (x,y), (x+w,y+h), (0,255,0), 2)
         id, confidence = recognizer.predict(gray[y:y+h,x:x+w])
         # Check if confidence is less them 100 ==> "0" is perfect match 
-        if (confidence < 100):
+        if (confidence > 30):
             id = names[id]
             confidence = "  {0}%".format(round(100 - confidence))
         else:
